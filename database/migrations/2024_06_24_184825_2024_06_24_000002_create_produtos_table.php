@@ -14,6 +14,7 @@ return new class extends Migration
             $table->decimal('preco', 8, 2);
             $table->integer('estoque');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

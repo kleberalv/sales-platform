@@ -14,6 +14,7 @@ return new class extends Migration
             $table->date('data_venda');
             $table->decimal('total', 10, 2);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
