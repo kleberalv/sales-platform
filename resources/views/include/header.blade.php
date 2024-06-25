@@ -17,10 +17,9 @@
 
     <link rel="icon" type="image/png" href="/favicon.png">
     <title>Plataforma de vendas</title>
-
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
     <div id="overlay" class="overlay"></div>
     <div id="loader" class="loader"></div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -32,35 +31,16 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 @guest
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="{{ auth()->check() ? route('admin') : env('APP_URL') }}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Link</a>
-                    </li> -->
                 </ul>
-
-
-                <!-- <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('login') }}">Login</a>
-                    </li>
-                </ul> -->
-
                 @else
-
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-
+                        <a id="clientes" class="nav-link active" aria-current="page" href="{{route('clientes.index')}}">Clientes</a>
                     </li>
                     <li class="nav-item">
-
-                    </li>
-                    <li class="nav-item">
-
+                        <a id="produtos" class="nav-link active" aria-current="page" href="{{route('produtos.index')}}">Produtos</a>
                     </li>
                 </ul>
-
                 <ul class="navbar-nav">
                     <li class="nav-item">
                         <a id="logout" class="nav-link" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Logout</a>
@@ -69,7 +49,6 @@
                         </form>
                     </li>
                 </ul>
-
                 @endguest
             </div>
         </div>
@@ -90,7 +69,7 @@
     <script>
         $(document).ready(function() {
             $('#toast .toast-body').html("{{ session('success') }}");
-            $('#toast').addClass('bg-light');
+            $('#toast').removeClass('bg-light').addClass('bg-success text-white');
             var toast = new bootstrap.Toast($('#toast'));
             toast.show();
         });
@@ -101,7 +80,7 @@
     <script>
         $(document).ready(function() {
             $('#toast .toast-body').html("{{ session('error') }}");
-            $('#toast').addClass('bg-warning');
+            $('#toast').removeClass('bg-light').addClass('bg-danger text-white');
             var toast = new bootstrap.Toast($('#toast'));
             toast.show();
         });
@@ -120,3 +99,4 @@
             });
         });
     </script>
+    </div>

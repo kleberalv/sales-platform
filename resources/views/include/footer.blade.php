@@ -1,10 +1,4 @@
-<link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
-<script src="{{ asset('js/axios.min.js') }}"></script>
-<script src="{{ asset('js/webfont.js') }}"></script>
-<script src="{{ asset('js/jquery-3.5.1.js') }}"></script>
-<script src="{{ asset('js/jquery.dataTables.min.js') }}"></script>
-
-<footer class="bg-dark py-3 my-4 text-white">
+<footer class="bg-dark py-3 mt-auto text-white">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-md-8 d-flex align-items-center">
@@ -17,7 +11,6 @@
             </div>
             <div class="col-md-4">
                 <ul class="nav justify-content-end list-unstyled">
-
                 </ul>
             </div>
         </div>

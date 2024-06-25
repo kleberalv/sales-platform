@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\RequestHelper;
+use App\Helpers\ResponseHelper;
 
 class ProdutoController extends Controller
 {
@@ -36,15 +37,26 @@ class ProdutoController extends Controller
     public function index(Request $request)
     {
         try {
-            $produtos = Produto::all();
+            $search = $request->input('search');
+            $query = Produto::when($search, function ($query, $search) {
+                return $query->where('nome', 'like', "%{$search}%")
+                    ->orWhere('preco', 'like', "%{$search}%")
+                    ->orWhere('estoque', 'like', "%{$search}%");
+            });
 
             if (RequestHelper::isApiRequest($request)) {
-                return response()->json($produtos, Response::HTTP_OK);
+                $produtos = $query->get();
+                return ResponseHelper::respondWithApi(null, $produtos);
+            } else {
+                $produtos = $query->paginate(10);
+                return view('produtos', compact('produtos'));
             }
-
-            return view('produtos.index', compact('produtos'));
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao buscar produtos.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('produtos.index', $message, 'error');
         }
     }
 
@@ -54,25 +66,24 @@ class ProdutoController extends Controller
             $this->validateProdutoInput($request->all());
 
             $produto = Produto::create($request->all());
+            $message = 'Produto criado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Produto criado com sucesso!',
-                ], Response::HTTP_CREATED);
-            }
-
-            return redirect()->route('produtos.index')
-                ->with('success', 'Produto criado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_CREATED) :
+                ResponseHelper::respondWithWeb('produtos.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('produtos.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao criar produto.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao criar produto.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('produtos.index', $message, 'error');
         }
     }
 
@@ -80,15 +91,16 @@ class ProdutoController extends Controller
     {
         try {
             if (RequestHelper::isApiRequest($request)) {
-                return response()->json($produto, Response::HTTP_OK);
+                return ResponseHelper::respondWithApi(null, $produto, Response::HTTP_OK);
             }
 
             return view('produtos.show', compact('produto'));
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao encontrar produto.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao encontrar produto.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('produtos.index', $message, 'error');
         }
     }
 
@@ -98,25 +110,24 @@ class ProdutoController extends Controller
             $this->validateProdutoInput($request->all(), $produto->id);
 
             $produto->update($request->all());
+            $message = 'Produto atualizado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Produto atualizado com sucesso!',
-                ], Response::HTTP_OK);
-            }
-
-            return redirect()->route('produtos.index')
-                ->with('success', 'Produto atualizado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_OK) :
+                ResponseHelper::respondWithWeb('produtos.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('produtos.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao atualizar produto.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao atualizar produto.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('produtos.index', $message, 'error');
         }
     }
 
@@ -124,20 +135,17 @@ class ProdutoController extends Controller
     {
         try {
             $produto->delete();
+            $message = 'Produto deletado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Produto deletado com sucesso!',
-                ], Response::HTTP_OK);
-            }
-
-            return redirect()->route('produtos.index')
-                ->with('success', 'Produto deletado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message) :
+                ResponseHelper::respondWithWeb('produtos.index', $message);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao deletar produto.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao deletar produto.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('produtos.index', $message, 'error');
         }
     }
 }

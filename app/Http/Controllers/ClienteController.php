@@ -7,10 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\RequestHelper;
+use App\Helpers\ResponseHelper;
 
 class ClienteController extends Controller
 {
-    private function validateClienteInput($data)
+    private function validateClienteInput($data, $clienteId = null)
     {
         $data['cpf'] = RequestHelper::formatCpf($data['cpf']);
 
@@ -18,7 +19,7 @@ class ClienteController extends Controller
             'nome' => 'required|string|max:255',
             'email' => 'required|string|max:255',
             'telefone' => 'required|string|max:20',
-            'cpf' => 'required|string|max:11|unique:clientes,cpf,' . ($clienteId ?? 'null'),
+            'cpf' => 'required|string|min:11|max:11|unique:clientes,cpf,' . $clienteId,
         ];
 
         $messages = [
@@ -40,15 +41,27 @@ class ClienteController extends Controller
     public function index(Request $request)
     {
         try {
-            $clientes = Cliente::all();
+            $search = $request->input('search');
+            $clientes = Cliente::when($search, function ($query, $search) {
+                $searchFormatted = RequestHelper::formatCpf($search);
+                return $query->where('nome', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('cpf', 'like', "%{$searchFormatted}%")
+                    ->orWhere('telefone', 'like', "%{$search}%");
+            })->paginate(10);
 
             if (RequestHelper::isApiRequest($request)) {
-                return response()->json($clientes, Response::HTTP_OK);
+                $clientesData = $clientes->getCollection();
+                return ResponseHelper::respondWithApi(null, $clientesData);
             }
 
-            return view('clientes.index', compact('clientes'));
+            return view('clientes', compact('clientes'));
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao buscar clientes.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
         }
     }
 
@@ -60,56 +73,43 @@ class ClienteController extends Controller
             $cliente = Cliente::withTrashed()->where('cpf', $cpf)->first();
 
             if ($cliente) {
-                $cliente->restore();
-                $cliente->update($request->all());
+                if ($cliente->trashed()) {
+                    $cliente->restore();
+                    $cliente->update($request->all());
+                    $message = 'Cliente reativado com sucesso!';
 
-                if (RequestHelper::isApiRequest($request)) {
-                    return response()->json([
-                        'message' => 'Cliente reativado com sucesso!',
-                    ], Response::HTTP_OK);
+                    return RequestHelper::isApiRequest($request) ?
+                        ResponseHelper::respondWithApi($message, null, Response::HTTP_CREATED) :
+                        ResponseHelper::respondWithWeb('clientes.index', $message);
+                } else {
+                    $message = 'Já existe um cliente cadastrado com este CPF.';
+
+                    return RequestHelper::isApiRequest($request) ?
+                        ResponseHelper::respondWithApi($message, null, Response::HTTP_CONFLICT) :
+                        ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
                 }
-
-                return redirect()->route('clientes.index')
-                    ->with('success', 'Cliente reativado com sucesso.');
             }
 
             $this->validateClienteInput($request->all());
             $cliente = Cliente::create($request->all());
+            $message = 'Cliente criado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Cliente criado com sucesso!',
-                ], Response::HTTP_CREATED);
-            }
-
-            return redirect()->route('clientes.index')
-                ->with('success', 'Cliente criado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_CREATED) :
+                ResponseHelper::respondWithWeb('clientes.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao criar cliente.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
 
-    public function show(Request $request, Cliente $cliente)
-    {
-        try {
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json($cliente, Response::HTTP_OK);
-            }
-
-            return view('clientes.show', compact('cliente'));
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('clientes.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao encontrar cliente.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao criar cliente.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
         }
     }
 
@@ -117,27 +117,27 @@ class ClienteController extends Controller
     {
         try {
             $this->validateClienteInput($request->all(), $cliente->id);
-
+            $teste1 = $request->all();
+            $teste2 = $cliente;
             $cliente->update($request->all());
+            $message = 'Cliente atualizado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Cliente atualizado com sucesso!',
-                ], Response::HTTP_OK);
-            }
-
-            return redirect()->route('clientes.index')
-                ->with('success', 'Cliente atualizado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_OK) :
+                ResponseHelper::respondWithWeb('clientes.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('clientes.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao atualizar cliente.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao atualizar cliente.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
         }
     }
 
@@ -146,20 +146,23 @@ class ClienteController extends Controller
         try {
             $cliente = Cliente::findOrFail($id);
             $cliente->delete();
+            $message = 'Cliente deletado com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Cliente deletado com sucesso!',
-                ], Response::HTTP_OK);
-            }
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message) :
+                ResponseHelper::respondWithWeb('clientes.index', $message);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            $message = 'Erro ao deletar cliente: Cliente não encontrado.';
 
-            return redirect()->route('clientes.index')
-                ->with('success', 'Cliente deletado com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_NOT_FOUND) :
+                ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao deletar cliente.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao deletar cliente.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('clientes.index', $message, 'error');
         }
     }
 }
