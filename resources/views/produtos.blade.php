@@ -47,13 +47,9 @@
                                     <button class="btn btn-primary editar-produto" data-bs-toggle="modal" data-bs-target="#editarProdutoModal" data-produto-id="{{ $produto->id }}" data-nome="{{ $produto->nome }}" data-preco="{{ $produto->preco }}" data-estoque="{{ $produto->estoque }}">
                                         <i class="fa fa-pencil"></i> Editar
                                     </button>
-                                    <form id="excluir" action="{{ route('produtos.destroy', ['produto' => $produto->id]) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger">
-                                            <i class="fa fa-trash"></i> Excluir
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-danger excluir-produto" data-produto-id="{{ $produto->id }}" data-nome="{{ $produto->nome }}" data-preco="{{ $produto->preco }}" data-estoque="{{ $produto->estoque }}">
+                                        <i class="fa fa-trash"></i> Excluir
+                                    </button>
                                 </td>
                             </tr>
                             @endforeach
@@ -157,6 +153,36 @@
 </div>
 @endif
 
+<div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o produto <strong id="produtoNomeExcluir"></strong>?</p>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6>Detalhes do Produto:</h6>
+                        <ul id="detalhesProdutoExcluir" class="list-group">
+                            <!-- Detalhes do produto serão preenchidos via JavaScript -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="excluir" action="" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function() {
         $('.editar-produto').click(function() {
@@ -174,6 +200,31 @@
             action = action.replace(':id', produtoId);
             $('#salvarEdicao').attr('action', action);
             $('#editarProdutoModal').modal('show');
+        });
+
+        $('#preco, #editar-preco').on('input', function() {
+            this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+        });
+
+        $('.excluir-produto').click(function() {
+            var produtoId = $(this).data('produto-id');
+            var nome = $(this).data('nome');
+            var preco = parseFloat($(this).data('preco')); // Garantir que preco seja um número
+            var estoque = $(this).data('estoque');
+
+            $('#produtoNomeExcluir').text(nome);
+
+            var detalhesHtml = `
+                <li class="list-group-item"><strong>Nome:</strong> ${nome}</li>
+                <li class="list-group-item"><strong>Preço:</strong> R$ ${preco.toFixed(2).replace('.', ',')}</li>
+                <li class="list-group-item"><strong>Estoque:</strong> ${estoque}</li>`;
+            $('#detalhesProdutoExcluir').html(detalhesHtml);
+
+            var formAction = "{{ route('produtos.destroy', ':id') }}";
+            formAction = formAction.replace(':id', produtoId);
+            $('#excluir').attr('action', formAction);
+
+            $('#confirmarExclusaoModal').modal('show');
         });
 
         $('#preco, #editar-preco').on('input', function() {
