@@ -3,17 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Venda;
+use App\Models\Cliente;
 use App\Models\ItensVenda;
 use App\Models\Produto;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\RequestHelper;
+use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\DB;
 
 class VendaController extends Controller
 {
-    private function validateVendaInput($data, $vendaId = null)
+    private function validateVendaInput($data)
     {
         $rules = [
             'cliente_id' => 'required|exists:clientes,id',
@@ -41,34 +43,31 @@ class VendaController extends Controller
     public function index(Request $request)
     {
         try {
-            $vendas = Venda::with(['itens', 'itens.produto'])->get();
+            $search = $request->input('search');
+            $vendasQuery = Venda::with(['cliente', 'itens.produto']);
 
-            $vendas = $vendas->map(function ($venda) {
-                return [
-                    'id' => $venda->id,
-                    'cliente_id' => $venda->cliente_id,
-                    'data_venda' => $venda->data_venda,
-                    'total' => $venda->total,
-                    'itens' => $venda->itens->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'produto_id' => $item->produto_id,
-                            'produto_nome' => $item->produto->nome,
-                            'quantidade' => $item->quantidade,
-                            'preco_unitario' => $item->preco_unitario,
-                            'subtotal' => $item->subtotal,
-                        ];
-                    }),
-                ];
-            });
-
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json($vendas, Response::HTTP_OK);
+            if ($search) {
+                $vendasQuery->whereHas('cliente', function ($query) use ($search) {
+                    $query->where('nome', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('cpf', 'like', "%{$search}%");
+                });
             }
 
-            return view('vendas.index', compact('vendas'));
+            $vendas = RequestHelper::isApiRequest($request) ? $vendasQuery->get() : $vendasQuery->paginate(10);
+            $produtos = Produto::all();
+            $clientes = Cliente::all();
+
+            if (RequestHelper::isApiRequest($request)) {
+                return ResponseHelper::respondWithApi(null, $vendas);
+            }
+
+            return view('vendas', compact('vendas', 'produtos', 'clientes'));
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao buscar vendas.';
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         }
     }
 
@@ -93,9 +92,10 @@ class VendaController extends Controller
 
                 if ($produto->estoque < $item['quantidade']) {
                     DB::rollBack();
-                    return response()->json([
-                        'message' => 'Estoque insuficiente para o produto: ' . $produto->nome,
-                    ], Response::HTTP_BAD_REQUEST);
+                    $message = 'Estoque insuficiente para o produto: ' . $produto->nome;
+                    return RequestHelper::isApiRequest($request) ?
+                        ResponseHelper::respondWithApi($message, null, Response::HTTP_BAD_REQUEST) :
+                        ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
                 }
 
                 $produto->estoque -= $item['quantidade'];
@@ -112,27 +112,26 @@ class VendaController extends Controller
             $venda->save();
 
             DB::commit();
+            $message = 'Venda e itens de venda criados com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Venda e itens de venda criados com sucesso!',
-                ], Response::HTTP_CREATED);
-            }
-
-            return redirect()->route('vendas.index')
-                ->with('success', 'Venda e itens de venda criados com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_CREATED) :
+                ResponseHelper::respondWithWeb('vendas.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('vendas.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Erro ao criar venda.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao criar venda.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         }
     }
 
@@ -159,15 +158,15 @@ class VendaController extends Controller
             ];
 
             if (RequestHelper::isApiRequest($request)) {
-                return response()->json($vendaData, Response::HTTP_OK);
+                return ResponseHelper::respondWithApi(null, $vendaData, Response::HTTP_OK);
             }
 
             return view('vendas.show', compact('venda'));
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao encontrar venda.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao encontrar venda.';
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         }
     }
 
@@ -184,23 +183,25 @@ class VendaController extends Controller
                 $produto->save();
                 $item->delete();
             }
-
-            $venda->update([
-                'cliente_id' => $request->cliente_id,
-                'data_venda' => $request->data_venda,
-            ]);
+            $venda->delete();
 
             $total = 0;
+            $newVenda = Venda::create([
+                'cliente_id' => $request->cliente_id,
+                'data_venda' => $request->data_venda,
+                'total' => $total,
+            ]);
 
             foreach ($request->itens as $item) {
-                $item['venda_id'] = $venda->id;
+                $item['venda_id'] = $newVenda->id;
                 $produto = Produto::find($item['produto_id']);
 
                 if ($produto->estoque < $item['quantidade']) {
                     DB::rollBack();
-                    return response()->json([
-                        'message' => 'Estoque insuficiente para o produto: ' . $produto->nome,
-                    ], Response::HTTP_BAD_REQUEST);
+                    $message = 'Estoque insuficiente para o produto: ' . $produto->nome;
+                    return RequestHelper::isApiRequest($request) ?
+                        ResponseHelper::respondWithApi($message, null, Response::HTTP_BAD_REQUEST) :
+                        ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
                 }
 
                 $produto->estoque -= $item['quantidade'];
@@ -213,58 +214,66 @@ class VendaController extends Controller
                 ItensVenda::create($item);
             }
 
-            $venda->total = $total;
-            $venda->save();
+            $newVenda->total = $total;
+            $newVenda->save();
 
             DB::commit();
+            $message = 'Venda e itens de venda atualizados com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Venda e itens de venda atualizados com sucesso!',
-                ], Response::HTTP_OK);
-            }
-
-            return redirect()->route('vendas.index')
-                ->with('success', 'Venda e itens de venda atualizados com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_OK) :
+                ResponseHelper::respondWithWeb('vendas.index', $message);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Erro na validação dos dados.',
-                'errors' => $e->errors()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            $message = 'Erro na validação dos dados.';
+            $errors = collect($e->errors())->flatten()->all();
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $errors, Response::HTTP_UNPROCESSABLE_ENTITY) :
+                ResponseHelper::respondWithWeb('vendas.index', $message . ' ' . implode(', ', $errors), 'error');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Erro ao atualizar venda.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            $message = 'Erro ao atualizar venda.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         }
     }
 
     public function destroy(Request $request, Venda $venda)
     {
+        DB::beginTransaction();
+
         try {
             foreach ($venda->itens as $item) {
                 $produto = Produto::find($item->produto_id);
                 $produto->estoque += $item->quantidade;
                 $produto->save();
+                $item->delete();
             }
 
             $venda->delete();
+            DB::commit();
+            $message = 'Venda e itens de venda deletados com sucesso!';
 
-            if (RequestHelper::isApiRequest($request)) {
-                return response()->json([
-                    'message' => 'Venda deletada com sucesso!',
-                ], Response::HTTP_OK);
-            }
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message) :
+                ResponseHelper::respondWithWeb('vendas.index', $message);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            $message = 'Erro ao deletar venda: Venda não encontrada.';
 
-            return redirect()->route('vendas.index')
-                ->with('success', 'Venda deletada com sucesso.');
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, null, Response::HTTP_NOT_FOUND) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Erro ao deletar venda.',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            DB::rollBack();
+            $message = 'Erro ao deletar venda.';
+
+            return RequestHelper::isApiRequest($request) ?
+                ResponseHelper::respondWithApi($message, $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR) :
+                ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         }
     }
 }

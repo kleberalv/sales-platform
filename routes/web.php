@@ -26,17 +26,13 @@ Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('login', [AuthController::class, 'login']);
 
 Route::middleware(['auth'])->group(function () {
-
     Route::get('admin', function () {
         return view('admin');
     })->name('admin');
 
-    Route::resource('clientes', ClienteController::class);
-    Route::resource('produtos', ProdutoController::class);
-    Route::resource('vendas', VendaController::class);
-    Route::resource('itens_venda', ItensVendaController::class);
-
-
+    Route::resource('admin/clientes', ClienteController::class);
+    Route::resource('admin/produtos', ProdutoController::class);
+    Route::resource('admin/vendas', VendaController::class);
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });

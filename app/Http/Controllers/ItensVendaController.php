@@ -8,7 +8,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\RequestHelper;
 
-class ItemVendaController extends Controller
+class ItensVendaController extends Controller
 {
     private function validateItemVendaInput($data, $itemVendaId = null)
     {
