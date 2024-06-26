@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Venda;
+use App\Models\Cliente;
 use App\Models\ItensVenda;
 use App\Models\Produto;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class VendaController extends Controller
 {
-    private function validateVendaInput($data, $vendaId = null)
+    private function validateVendaInput($data)
     {
         $rules = [
             'cliente_id' => 'required|exists:clientes,id',
@@ -42,32 +43,26 @@ class VendaController extends Controller
     public function index(Request $request)
     {
         try {
-            $vendas = Venda::with(['itens', 'itens.produto'])->get();
+            $search = $request->input('search');
+            $vendasQuery = Venda::with(['cliente', 'itens.produto']);
 
-            $vendas = $vendas->map(function ($venda) {
-                return [
-                    'id' => $venda->id,
-                    'cliente_id' => $venda->cliente_id,
-                    'data_venda' => $venda->data_venda,
-                    'total' => $venda->total,
-                    'itens' => $venda->itens->map(function ($item) {
-                        return [
-                            'id' => $item->id,
-                            'produto_id' => $item->produto_id,
-                            'produto_nome' => $item->produto->nome,
-                            'quantidade' => $item->quantidade,
-                            'preco_unitario' => $item->preco_unitario,
-                            'subtotal' => $item->subtotal,
-                        ];
-                    }),
-                ];
-            });
+            if ($search) {
+                $vendasQuery->whereHas('cliente', function ($query) use ($search) {
+                    $query->where('nome', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('cpf', 'like', "%{$search}%");
+                });
+            }
+
+            $vendas = RequestHelper::isApiRequest($request) ? $vendasQuery->get() : $vendasQuery->paginate(10);
+            $produtos = Produto::all();
+            $clientes = Cliente::all();
 
             if (RequestHelper::isApiRequest($request)) {
                 return ResponseHelper::respondWithApi(null, $vendas);
             }
 
-            return view('vendas.index', compact('vendas'));
+            return view('vendas', compact('vendas', 'produtos', 'clientes'));
         } catch (\Exception $e) {
             $message = 'Erro ao buscar vendas.';
             return RequestHelper::isApiRequest($request) ?
@@ -188,16 +183,17 @@ class VendaController extends Controller
                 $produto->save();
                 $item->delete();
             }
-
-            $venda->update([
-                'cliente_id' => $request->cliente_id,
-                'data_venda' => $request->data_venda,
-            ]);
+            $venda->delete();
 
             $total = 0;
+            $newVenda = Venda::create([
+                'cliente_id' => $request->cliente_id,
+                'data_venda' => $request->data_venda,
+                'total' => $total,
+            ]);
 
             foreach ($request->itens as $item) {
-                $item['venda_id'] = $venda->id;
+                $item['venda_id'] = $newVenda->id;
                 $produto = Produto::find($item['produto_id']);
 
                 if ($produto->estoque < $item['quantidade']) {
@@ -218,8 +214,8 @@ class VendaController extends Controller
                 ItensVenda::create($item);
             }
 
-            $venda->total = $total;
-            $venda->save();
+            $newVenda->total = $total;
+            $newVenda->save();
 
             DB::commit();
             $message = 'Venda e itens de venda atualizados com sucesso!';
@@ -247,26 +243,32 @@ class VendaController extends Controller
 
     public function destroy(Request $request, Venda $venda)
     {
+        DB::beginTransaction();
+
         try {
             foreach ($venda->itens as $item) {
                 $produto = Produto::find($item->produto_id);
                 $produto->estoque += $item->quantidade;
                 $produto->save();
+                $item->delete();
             }
 
             $venda->delete();
-            $message = 'Venda deletada com sucesso!';
+            DB::commit();
+            $message = 'Venda e itens de venda deletados com sucesso!';
 
             return RequestHelper::isApiRequest($request) ?
                 ResponseHelper::respondWithApi($message) :
                 ResponseHelper::respondWithWeb('vendas.index', $message);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
             $message = 'Erro ao deletar venda: Venda não encontrada.';
 
             return RequestHelper::isApiRequest($request) ?
                 ResponseHelper::respondWithApi($message, null, Response::HTTP_NOT_FOUND) :
                 ResponseHelper::respondWithWeb('vendas.index', $message, 'error');
         } catch (\Exception $e) {
+            DB::rollBack();
             $message = 'Erro ao deletar venda.';
 
             return RequestHelper::isApiRequest($request) ?

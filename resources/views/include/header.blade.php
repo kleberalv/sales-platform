@@ -40,6 +40,9 @@
                     <li class="nav-item">
                         <a id="produtos" class="nav-link active" aria-current="page" href="{{route('produtos.index')}}">Produtos</a>
                     </li>
+                    <li class="nav-item">
+                        <a id="vemdas" class="nav-link active" aria-current="page" href="{{route('vendas.index')}}">Vendas</a>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
