@@ -27,6 +27,75 @@
   animation: mltShdSpin 1.7s infinite ease, round 1.7s infinite ease;
 }
 
+.navbar-custom {
+  background-color: #003366;
+  padding: 0px 0;
+}
+
+.navbar-custom .navbar-brand img {
+  height: 45px;
+}
+
+.navbar-custom .nav-link {
+  color: #fff !important;
+  margin-right: 20px;
+}
+
+.navbar-custom .nav-link:hover {
+  color: #ccc !important;
+}
+
+.navbar-custom .navbar-nav .nav-item .dropdown-menu {
+  background-color: #003366;
+}
+
+.navbar-custom .navbar-nav .nav-item .dropdown-menu .dropdown-item {
+  color: #fff !important;
+}
+
+.navbar-custom .navbar-nav .nav-item .dropdown-menu .dropdown-item:hover {
+  background-color: #002244;
+}
+
+.navbar-custom .navbar-nav .nav-item .dropdown-menu .dropdown-item:focus {
+  background-color: #002244;
+}
+
+.navbar-custom .social-icons a {
+  color: #fff;
+  margin-left: 15px;
+}
+
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255, 255, 255, 1)' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+.footer-custom {
+  background-color: #003366;
+  color: #fff;
+}
+
+.footer-custom a {
+  color: #fff !important;
+}
+
+.footer-custom a:hover {
+  color: #ccc !important;
+}
+
+.footer-custom .social-icons a {
+  margin-left: 15px;
+}
+
+.login-btn:hover {
+  background-color: #f8f9fa;
+  color: #003366;
+}
+
 @keyframes mltShdSpin {
   0% {
     box-shadow: 0 -0.83em 0 -0.4em,

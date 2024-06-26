@@ -22,26 +22,28 @@
 <body class="d-flex flex-column min-vh-100">
     <div id="overlay" class="overlay"></div>
     <div id="loader" class="loader"></div>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container">
-            <a id="home" class="navbar-brand" href="{{ auth()->check() ? route('admin') : env('APP_URL') }}">Plataforma de Vendas</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <a id="home" class="navbar-brand" href="{{ auth()->check() ? route('admin') : env('APP_URL') }}">
+                <img src="{{ asset('images/logo-branco.fw-430x96.png') }}" alt="Logo">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <div class="collapse navbar-collapse" id="navbarContent">
                 @guest
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 </ul>
                 @else
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a id="clientes" class="nav-link active" aria-current="page" href="{{route('clientes.index')}}">Clientes</a>
+                        <a id="clientes" class="nav-link" href="{{route('clientes.index')}}">Clientes</a>
                     </li>
                     <li class="nav-item">
-                        <a id="produtos" class="nav-link active" aria-current="page" href="{{route('produtos.index')}}">Produtos</a>
+                        <a id="produtos" class="nav-link" href="{{route('produtos.index')}}">Produtos</a>
                     </li>
                     <li class="nav-item">
-                        <a id="vemdas" class="nav-link active" aria-current="page" href="{{route('vendas.index')}}">Vendas</a>
+                        <a id="vendas" class="nav-link" href="{{route('vendas.index')}}">Vendas</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
@@ -96,10 +98,9 @@
                 $('#overlay').show();
                 $('#loader').show();
             });
-            $('#home').click(function() {
+            $('#home, #clientes, #produtos, #vendas, #logout').click(function() {
                 $('#overlay').show();
                 $('#loader').show();
             });
         });
     </script>
-    </div>
