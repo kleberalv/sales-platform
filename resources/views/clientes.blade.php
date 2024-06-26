@@ -49,13 +49,9 @@
                                     <button class="btn btn-primary editar-cliente" data-bs-toggle="modal" data-bs-target="#editarClienteModal" data-cliente-id="{{ $cliente->id }}" data-nome="{{ $cliente->nome }}" data-cpf="{{ $cliente->cpf }}" data-email="{{ $cliente->email }}" data-telefone="{{ $cliente->telefone }}">
                                         <i class="fa fa-pencil"></i> Editar
                                     </button>
-                                    <form id="excluir" action="{{ route('clientes.destroy', ['cliente' => $cliente->id]) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger">
-                                            <i class="fa fa-trash"></i> Excluir
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-danger excluir-cliente" data-cliente-id="{{ $cliente->id }}" data-nome="{{ $cliente->nome }}" data-cpf="{{ $cliente->cpf }}" data-email="{{ $cliente->email }}" data-telefone="{{ $cliente->telefone }}">
+                                        <i class="fa fa-trash"></i> Excluir
+                                    </button>
                                 </td>
                             </tr>
                             @endforeach
@@ -139,7 +135,7 @@
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
-                    <input type="hidden" id="editar-cliente_id" name="cliente_id" value="{{ $cliente->id }}"> <!-- Ensure value is set -->
+                    <input type="hidden" id="editar-cliente_id" name="cliente_id" value="{{ $cliente->id }}">
                     <div class="mb-3">
                         <label for="editar-nome" class="form-label">Nome completo</label>
                         <input type="text" class="form-control" id="editar-nome" name="nome" value="{{ $cliente->nome }}" required>
@@ -166,6 +162,36 @@
     </div>
 </div>
 @endif
+
+<div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o cliente <strong id="clienteNomeExcluir"></strong>?</p>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6>Detalhes do Cliente:</h6>
+                        <ul id="detalhesClienteExcluir" class="list-group">
+                            <!-- Detalhes do cliente serão preenchidos via JavaScript -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="excluir" action="" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     function formatCpf(cpf) {
@@ -198,6 +224,29 @@
             action = action.replace(':id', clienteId);
             $('#salvarEdicao').attr('action', action);
             $('#editarClienteModal').modal('show');
+        });
+
+        $('.excluir-cliente').click(function() {
+            var clienteId = $(this).data('cliente-id');
+            var nome = $(this).data('nome');
+            var cpf = $(this).data('cpf');
+            var email = $(this).data('email');
+            var telefone = $(this).data('telefone');
+
+            $('#clienteNomeExcluir').text(nome);
+
+            var detalhesHtml = `
+                <li class="list-group-item"><strong>Nome:</strong> ${nome}</li>
+                <li class="list-group-item"><strong>CPF:</strong> ${cpf}</li>
+                <li class="list-group-item"><strong>Email:</strong> ${email}</li>
+                <li class="list-group-item"><strong>Telefone:</strong> ${telefone}</li>`;
+            $('#detalhesClienteExcluir').html(detalhesHtml);
+
+            var formAction = "{{ route('clientes.destroy', ':id') }}";
+            formAction = formAction.replace(':id', clienteId);
+            $('#excluir').attr('action', formAction);
+
+            $('#confirmarExclusaoModal').modal('show');
         });
     });
 </script>

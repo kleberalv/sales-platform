@@ -45,7 +45,7 @@
                                     <button class="btn btn-warning editar-venda" data-venda="{{ json_encode($venda) }}">
                                         <i class="fa fa-pencil"></i> Editar
                                     </button>
-                                    <button class="btn btn-danger excluir-venda" data-venda-id="{{ $venda->id }}">
+                                    <button type="button" class="btn btn-danger excluir" data-venda="{{ json_encode($venda) }}">
                                         <i class="fa fa-trash"></i> Excluir
                                     </button>
                                 </td>
@@ -94,7 +94,6 @@
             </div>
             <div class="modal-body">
                 <div id="detalhesVenda">
-                    <!-- Detalhes da venda serão carregados via AJAX -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -112,7 +111,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="formEditarVenda" action="{{ route('vendas.update', ['venda' => ':id']) }}" method="POST">
+                <form id="salvarEdicao" action="{{ route('vendas.update', ['venda' => ':id']) }}" method="POST">
                     @csrf
                     @method('PUT')
                     <div class="mb-3">
@@ -130,7 +129,6 @@
                     <div class="mb-3">
                         <label class="form-label">Itens</label>
                         <div id="editar-itens-container">
-                            <!-- Os itens serão adicionados dinamicamente aqui -->
                         </div>
                         <button type="button" class="btn btn-secondary" id="adicionar-item-editar">Adicionar Item</button>
                     </div>
@@ -138,6 +136,40 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <p>Tem certeza que deseja excluir a venda de ID <strong id="vendaIdExcluir"></strong> do cliente <strong id="clienteNomeExcluir"></strong>?</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h6>Produtos na venda:</h6>
+                        <ul id="produtosExcluir" class="list-group">
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="excluir" action="" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Excluir</button>
                 </form>
             </div>
         </div>
@@ -195,7 +227,7 @@
 
         $('.editar-venda').click(function() {
             var venda = $(this).data('venda');
-            var form = $('#formEditarVenda');
+            var form = $('#salvarEdicao');
             var url = form.attr('action').replace(':id', venda.id);
             form.attr('action', url);
             $('#editar-cliente_id').val(venda.cliente.id);
@@ -212,7 +244,7 @@
             $('#editarVendaModal').modal('show');
         });
 
-        $('#formEditarVenda').submit(function(event) {
+        $('#salvarEdicao').submit(function(event) {
             var form = $(this);
             var clienteId = $('#editar-cliente_id').val();
             var dataVenda = $('#editar-data_venda').val();
@@ -299,5 +331,29 @@
             $('#detalhesVenda').html(detalhesVendaHtml);
             $('#visualizarVendaModal').modal('show');
         });
+
+        $('.excluir').click(function() {
+            var venda = $(this).data('venda');
+            var vendaId = venda.id;
+            var clienteNome = venda.cliente.nome;
+            var produtos = venda.itens;
+
+            $('#vendaIdExcluir').text(vendaId);
+            $('#clienteNomeExcluir').text(clienteNome);
+
+            var produtosHtml = '';
+            produtos.forEach(function(item) {
+                produtosHtml += `<li class="list-group-item">${item.produto.nome} - Quantidade: ${item.quantidade}</li>`;
+            });
+            $('#produtosExcluir').html(produtosHtml);
+
+            var formAction = "{{ route('vendas.destroy', ':id') }}";
+            formAction = formAction.replace(':id', vendaId);
+            $('#excluir').attr('action', formAction);
+
+            $('#confirmarExclusaoModal').modal('show');
+        });
+
+
     });
 </script>
