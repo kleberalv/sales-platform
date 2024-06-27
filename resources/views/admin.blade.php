@@ -19,7 +19,9 @@
                         <a id="produtos" href="{{ route('produtos.index') }}" class="list-group-item list-group-item-action">
                             <i class="fa fa-archive"></i> Gerenciar Produtos
                         </a>
-
+                        <a id="relatorio" href="{{ route('vendas.relatorio') }}" class="list-group-item list-group-item-action">
+                            <i class="fa fa-file"></i> Relatório de Vendas
+                        </a>
                     </div>
                 </div>
             </div>

@@ -33,6 +33,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('admin/clientes', ClienteController::class);
     Route::resource('admin/produtos', ProdutoController::class);
     Route::resource('admin/vendas', VendaController::class);
+    Route::get('admin/relatorio', [VendaController::class, 'relatorio'])->name('vendas.relatorio');
 
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 });
