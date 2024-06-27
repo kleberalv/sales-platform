@@ -98,7 +98,7 @@
 
     <script>
         $(document).ready(function() {
-            $('#login, #salvarAdicao, #salvarEdicao, #excluir, #search').submit(function() {
+            $('#login, #salvarAdicao, #salvarEdicao, #salvarNovaVenda, #excluir, #search').submit(function() {
                 $('#overlay').show();
                 $('#loader').show();
             });

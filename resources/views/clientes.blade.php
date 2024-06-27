@@ -15,8 +15,8 @@
                             </div>
                         </form>
                         <div class="ml-auto">
-                            <button class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#adicionarClienteModal">
-                                Adicionar Cliente
+                            <button class="btn btn-success float-end" data-bs-toggle="modal" data-bs-target="#adicionarClienteModal">
+                                <i class="fa fa-plus"></i> Adicionar Cliente
                             </button>
                         </div>
                     </div>
@@ -250,3 +250,5 @@
         });
     });
 </script>
+
+@include('include.footer')

@@ -14,6 +14,9 @@
                                 <button class="btn btn-secondary" type="submit">Buscar</button>
                             </div>
                         </form>
+                        <button class="btn btn-success" id="novaVendaButton">
+                            <i class="fa fa-plus"></i> Nova Venda
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -142,34 +145,38 @@
     </div>
 </div>
 
-<div class="modal fade" id="confirmarExclusaoModal" tabindex="-1" aria-labelledby="confirmarExclusaoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div class="modal fade" id="criarVendaModal" tabindex="-1" aria-labelledby="criarVendaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="confirmarExclusaoModalLabel">Confirmar Exclusão</h5>
+                <h5 class="modal-title" id="criarVendaModalLabel">Criar Nova Venda</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <p>Tem certeza que deseja excluir a venda de ID <strong id="vendaIdExcluir"></strong> do cliente <strong id="clienteNomeExcluir"></strong>?</p>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <h6>Produtos na venda:</h6>
-                        <ul id="produtosExcluir" class="list-group">
-
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form id="excluir" action="" method="POST" style="display:inline;">
+                <form id="salvarNovaVenda" action="{{ route('vendas.store') }}" method="POST">
                     @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Excluir</button>
+                    <div class="mb-3">
+                        <label for="criar-cliente_id" class="form-label">Cliente</label>
+                        <select class="form-select" id="criar-cliente_id" name="cliente_id" required>
+                            @foreach ($clientes as $cliente)
+                            <option value="{{ $cliente->id }}">{{ $cliente->nome }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="criar-data_venda" class="form-label">Data da Venda</label>
+                        <input type="date" class="form-control" id="criar-data_venda" name="data_venda" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Itens</label>
+                        <div id="criar-itens-container">
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="adicionar-item-criar">Adicionar Item</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Nova Venda</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -216,6 +223,11 @@
             adicionarItem(container, @json($produtos));
         });
 
+        $('#adicionar-item-criar').click(function() {
+            var container = $('#criar-itens-container');
+            adicionarItem(container, @json($produtos));
+        });
+
         $(document).on('change', '.produto-select, .quantidade-input', function() {
             var item = $(this).closest('.item-venda');
             atualizarSubtotal(item);
@@ -251,6 +263,38 @@
             var itens = [];
 
             $('#editar-itens-container .item-venda').each(function() {
+                var produtoId = $(this).find('.produto-select').val();
+                var quantidade = $(this).find('.quantidade-input').val();
+                itens.push({
+                    produto_id: produtoId,
+                    quantidade: quantidade
+                });
+            });
+
+            var data = {
+                cliente_id: clienteId,
+                data_venda: dataVenda,
+                itens: itens
+            };
+
+            form.find('input[name="itens[][produto_id]"]').remove();
+            form.find('input[name="itens[][quantidade]"]').remove();
+
+            itens.forEach(function(item, index) {
+                form.append('<input type="hidden" name="itens[' + index + '][produto_id]" value="' + item.produto_id + '">');
+                form.append('<input type="hidden" name="itens[' + index + '][quantidade]" value="' + item.quantidade + '">');
+            });
+
+            form.off('submit').submit();
+        });
+
+        $('#salvarNovaVenda').submit(function(event) {
+            var form = $(this);
+            var clienteId = $('#criar-cliente_id').val();
+            var dataVenda = $('#criar-data_venda').val();
+            var itens = [];
+
+            $('#criar-itens-container .item-venda').each(function() {
                 var produtoId = $(this).find('.produto-select').val();
                 var quantidade = $(this).find('.quantidade-input').val();
                 itens.push({
@@ -354,6 +398,10 @@
             $('#confirmarExclusaoModal').modal('show');
         });
 
-
+        $('#novaVendaButton').click(function() {
+            $('#criarVendaModal').modal('show');
+        });
     });
 </script>
+
+@include('include.footer')

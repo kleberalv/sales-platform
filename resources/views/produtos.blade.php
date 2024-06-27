@@ -15,8 +15,8 @@
                             </div>
                         </form>
                         <div class="ml-auto">
-                            <button class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#adicionarProdutoModal">
-                                Adicionar Produto
+                            <button class="btn btn-success float-end" data-bs-toggle="modal" data-bs-target="#adicionarProdutoModal">
+                                <i class="fa fa-plus"></i> Adicionar Produto
                             </button>
                         </div>
                     </div>
@@ -232,3 +232,5 @@
         });
     });
 </script>
+
+@include('include.footer')
