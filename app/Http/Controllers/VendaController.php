@@ -40,6 +40,27 @@ class VendaController extends Controller
         }
     }
 
+    public function relatorio(Request $request)
+    {
+        $query = Venda::with(['cliente', 'itens.produto']);
+
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->whereHas('cliente', function ($query) use ($search) {
+                $query->where('nome', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('all')) {
+            $vendas = $query->get();
+            return response()->json($vendas);
+        }
+
+        $vendas = $query->paginate(10);
+
+        return view('relatorio', compact('vendas'));
+    }
+
     public function index(Request $request)
     {
         try {

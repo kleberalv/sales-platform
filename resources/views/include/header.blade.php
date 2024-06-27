@@ -45,6 +45,10 @@
                     <li class="nav-item">
                         <a id="vendas" class="nav-link" href="{{route('vendas.index')}}">Vendas</a>
                     </li>
+                    <li class="nav-item">
+                        <a id="relatorio" class="nav-link" href="{{ route('vendas.relatorio') }}">Relatório</a>
+                    </li>
+
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -98,7 +102,7 @@
                 $('#overlay').show();
                 $('#loader').show();
             });
-            $('#home, #clientes, #produtos, #vendas, #logout').click(function() {
+            $('#home, #clientes, #produtos, #vendas, #relatorio, #imprimirTudo, #logout').click(function() {
                 $('#overlay').show();
                 $('#loader').show();
             });
