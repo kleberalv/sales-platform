@@ -250,3 +250,5 @@
         });
     });
 </script>
+
+@include('include.footer')

@@ -96,8 +96,6 @@
     </div>
 </div>
 
-@include('include.footer')
-
 <script>
     function fetchAllData() {
         $('#overlay').show();
@@ -310,3 +308,5 @@
         });
     });
 </script>
+
+@include('include.footer')

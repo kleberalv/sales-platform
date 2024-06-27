@@ -232,3 +232,5 @@
         });
     });
 </script>
+
+@include('include.footer')
