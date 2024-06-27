@@ -38,9 +38,9 @@ Este projeto é fornecido "no estado em que se encontra", sem garantias de qualq
 
 Siga as etapas abaixo para configurar e executar o projeto:
 
-1. Clone o repositórios base-project-docker-laravel em seu sistema.
+1. Clone o repositórios sales-platform em seu sistema.
 
-2. Abra um terminal e navegue até o diretório base-project-docker-laravel.
+2. Abra um terminal de sua preferência e navegue até o diretório onde foi clonado o projeto sales-platform. OBS: O terminal do VSCode NÃO funcionará para abrir o container do passo 5. Recomendo utilizar um terminal externo.
 
 3. Copie os dados do arquivo .env.example, crie um arquivo na raiz do projeto chamado .env e cole dentro dele os dados presentes em .env.example.
 
@@ -50,8 +50,8 @@ Siga as etapas abaixo para configurar e executar o projeto:
 5. Após o download e a criação dos contêineres, acesse o contêiner app através do terminal:
 `docker exec -it application-server-app /bin/bash`
 
-6. Dentro do contêiner app, execute o seguinte comando:
-`composer install`
+6. Dentro do contêiner app, execute os seguintes comandos:
+`composer install` e `php artisan migrate && php artisan db:seed`
 
 7. Agora, você pode acessar o projeto em seu navegador através do link: http://localhost:8080/.
 
@@ -60,6 +60,10 @@ Siga as etapas abaixo para configurar e executar o projeto:
     <img align="center" alt="PHP" src="https://img.shields.io/badge/PHP-777BB4?style=for-the-badge&logo=php&logoColor=white">
     <img align="center" alt="Laravel" src="https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white">
     <img align="center" alt="Xdebug" src="https://img.shields.io/badge/Xdebug-DB1F29?style=for-the-badge&logo=xdebug&logoColor=white">
+    <img align="center" alt="Bootstrap" src="https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white">
+    <img align="center" alt="jQuery" src="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white">
+    <img align="center" alt="JavaScript" src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
+    <img align="center" alt="AJAX" src="https://img.shields.io/badge/AJAX-007396?style=for-the-badge&logo=ajax&logoColor=white">
 </div>
 
 ## Ferramentas de desenvolvimento utilizadas
