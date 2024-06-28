@@ -42,20 +42,25 @@ class ClienteController extends Controller
     {
         try {
             $search = $request->input('search');
-            $clientes = Cliente::when($search, function ($query, $search) {
+            $query = Cliente::when($search, function ($query, $search) {
                 $searchFormatted = RequestHelper::formatCpf($search);
                 return $query->where('nome', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('cpf', 'like', "%{$searchFormatted}%")
+                    ->orWhere(function ($query) use ($searchFormatted) {
+                        if (!empty($searchFormatted)) {
+                            $query->where('cpf', 'like', "%{$searchFormatted}%");
+                        }
+                    })
                     ->orWhere('telefone', 'like', "%{$search}%");
-            })->paginate(10);
+            });
 
             if (RequestHelper::isApiRequest($request)) {
-                $clientesData = $clientes->getCollection();
-                return ResponseHelper::respondWithApi(null, $clientesData);
+                $clientes = $query->get();
+                return ResponseHelper::respondWithApi(null, $clientes);
+            } else {
+                $clientes = $query->paginate(10);
+                return view('clientes', compact('clientes'));
             }
-
-            return view('clientes', compact('clientes'));
         } catch (\Exception $e) {
             $message = 'Erro ao buscar clientes.';
 
