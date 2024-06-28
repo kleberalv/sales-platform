@@ -53,7 +53,9 @@ Siga as etapas abaixo para configurar e executar o projeto:
 6. Dentro do contêiner app, execute os seguintes comandos:
 `composer install` e `php artisan migrate && php artisan db:seed`
 
-7. Agora, você pode acessar o projeto em seu navegador através do link: http://localhost:8080/.
+7. Agora, você pode acessar o projeto em seu navegador através do link: http://localhost:8080/. O e-mail de acesso é `admin@example.com` e a senha é `password`.
+
+8. Para acessar o banco de dados, acesse em seu navegador o link: http://localhost:8090/. Usuário e senhas foram definidas no .env
 
 ## Tecnologias utilizadas
 <div align="left">
